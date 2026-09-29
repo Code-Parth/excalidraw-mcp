@@ -61,6 +61,27 @@ Text responses can only go so far. Sometimes users need to interact with data, n
 
 PRs welcome! See [Local](#local) above for build instructions.
 
+### Local Docker / custom store URLs
+
+When exporting diagrams, the server uploads to a blob store and builds a share link.
+
+| Env | Default | Purpose |
+|-----|---------|---------|
+| `EXCALIDRAW_STORE_URL` | `https://json.excalidraw.com/api/v2/post/` | Blob POST endpoint |
+| `EXCALIDRAW_APP_URL` | `https://excalidraw.com` | Origin for `#json=` share links |
+| `PORT` | `3001` | HTTP MCP listen port |
+
+Example (pointing at a local excalidraw-store):
+
+```bash
+EXCALIDRAW_STORE_URL=http://127.0.0.1:8080/api/v2/post/ \
+EXCALIDRAW_APP_URL=http://localhost:3000 \
+pnpm run serve
+```
+
+For the single-container stack with UI + store + MCP, see the sibling
+`docker-all-in-one/` folder next to this repo.
+
 ### Deploy your own instance
 
 You can deploy your own copy to Vercel in a few clicks:
