@@ -11,6 +11,17 @@ import type { CheckpointStore } from "./checkpoint-store.js";
 /** Maximum allowed size for element/data input strings (5 MB). */
 const MAX_INPUT_BYTES = 5 * 1024 * 1024;
 
+/** Blob store POST URL (defaults to production json.excalidraw.com). */
+const EXCALIDRAW_STORE_URL = (
+  process.env.EXCALIDRAW_STORE_URL ||
+  "https://json.excalidraw.com/api/v2/post/"
+).replace(/\/?$/, "/");
+
+/** App origin used when building shareable #json= links. */
+const EXCALIDRAW_APP_URL = (
+  process.env.EXCALIDRAW_APP_URL || "https://excalidraw.com"
+).replace(/\/$/, "");
+
 // Works both from source (src/server.ts) and compiled (dist/server.js)
 const DIST_DIR = import.meta.filename.endsWith(".ts")
   ? path.join(import.meta.dirname, "..", "dist")
@@ -515,7 +526,7 @@ However, if the user wants to edit something on this diagram "${checkpointId}", 
   registerAppTool(server,
     "export_to_excalidraw",
     {
-      description: "Upload diagram to excalidraw.com and return shareable URL.",
+      description: "Upload diagram to Excalidraw store and return shareable URL.",
       inputSchema: { json: z.string().describe("Serialized Excalidraw JSON") },
       _meta: { ui: { visibility: ["app"] } },
     },
@@ -568,7 +579,7 @@ However, if the user wants to edit something on this diagram "${checkpointId}", 
           compressed,
         );
 
-        // 4. Encoding metadata (tells excalidraw.com how to decode)
+        // 4. Encoding metadata (tells the Excalidraw app how to decode)
         const encodingMeta = te.encode(JSON.stringify({
           version: 2,
           compression: "pako@1",
@@ -578,8 +589,8 @@ However, if the user wants to edit something on this diagram "${checkpointId}", 
         // 5. Outer payload: concatBuffers(encodingMeta, iv, encryptedData)
         const payload = Buffer.from(concatBuffers(encodingMeta, iv, new Uint8Array(encrypted)));
 
-        // 5. Upload to excalidraw backend
-        const res = await fetch("https://json.excalidraw.com/api/v2/post/", {
+        // 5. Upload to Excalidraw store (EXCALIDRAW_STORE_URL)
+        const res = await fetch(EXCALIDRAW_STORE_URL, {
           method: "POST",
           body: payload,
         });
@@ -588,7 +599,7 @@ However, if the user wants to edit something on this diagram "${checkpointId}", 
 
         // 6. Export key as base64url string
         const jwk = await globalThis.crypto.subtle.exportKey("jwk", cryptoKey);
-        const url = `https://excalidraw.com/#json=${id},${jwk.k}`;
+        const url = `${EXCALIDRAW_APP_URL}/#json=${id},${jwk.k}`;
 
         return { content: [{ type: "text", text: url }] };
       } catch (err) {
